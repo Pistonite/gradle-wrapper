@@ -161,7 +161,7 @@ impl Environment {
         fn extract_impl(text: &str) -> cu::Result<ValidatedVersion> {
             let props = properties::parse(text);
             let url = cu::check!(
-                props.get("distributionurl"),
+                props.get("distributionUrl"),
                 "no distributionUrl in gradle-wrapper.properties"
             )?;
             let version = ValidatedVersion::try_from_url(url)?;
@@ -219,15 +219,34 @@ impl Environment {
 
     pub fn run_project_wrapper_jar(
         &self,
-        sync_known_good: Option<&KnownGood>,
+        known_good: &KnownGood,
+        sync_jar: bool
     ) -> cu::Result<ExitCode> {
         let dir = self.project.join("gradle/wrapper");
         let jar = dir.join("gradle-wrapper.jar");
-        if let Some(kg) = sync_known_good {
-            cu::fs::make_dir(&dir)?;
-            cu::fs::copy(&kg.jar, &jar)?;
-            cu::fs::copy(&kg.properties, dir.join("gradle-wrapper.properties"))?;
+        cu::fs::make_dir(&dir)?;
+        if sync_jar {
+            cu::debug!("replacing the project's gradle-wrapper.jar with the known-good copy");
+            cu::fs::copy(&known_good.jar, &jar)?;
         }
+
+        // The properties file also needs to be checked and replaced with the known-good,
+        // even if the jar is good, because the distributionUrl inside could be malicious
+        let properties = dir.join("gradle-wrapper.properties");
+        let expected_hash = checksum::sha256_file(&known_good.properties)?;
+        let sync_properties = match checksum::sha256_file(&properties) {
+            Err(e) => {
+                cu::debug!("cannot hash the project's gradle-wrapper.properties: {e:?}");
+                true
+            }
+            Ok(actual_hash) => checksum::verify(&expected_hash, &actual_hash).is_err(),
+        };
+        if sync_properties {
+            cu::debug!("replacing the project's gradle-wrapper.properties with the known-good copy");
+            cu::fs::copy(&known_good.properties, properties)?;
+        }
+
+
         // Launch via -classpath and an explicit main class rather than `java -jar`.
         //
         // Modern wrapper jars carry `Main-Class` in their manifest, so `-jar` works

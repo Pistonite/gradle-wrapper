@@ -27,7 +27,7 @@ pub fn run() -> cu::Result<ExitCode> {
         None
     };
 
-    let need_to_sync_known_good = match checksum_existing {
+    let (known_good, need_to_sync_known_good) = match checksum_existing {
         Err(_) => {
             // did not get a local checksum; syncing known-good is required
             let (known_good, _) = join_known_good_handle(
@@ -38,7 +38,7 @@ pub fn run() -> cu::Result<ExitCode> {
                 known_good_handle,
             )?;
             // verified known good to be copied to the project
-            Some(known_good)
+            (known_good, true)
         }
         Ok(checksum_existing) => {
             let (known_good, checksum_known_good) = join_known_good_handle(
@@ -56,12 +56,12 @@ pub fn run() -> cu::Result<ExitCode> {
                                 "current gradle-wrapper.jar does not match the official checksum: {e:?}"
                             );
                             // verified known good to be copied to the project
-                            Some(known_good)
+                            (known_good, true)
                         }
                         Ok(_) => {
                             cu::debug!("verified existing gradle-wrapper.jar against official checksum");
                             // can use existing
-                            None
+                            (known_good, false)
                         }
                     }
                 }
@@ -73,12 +73,12 @@ pub fn run() -> cu::Result<ExitCode> {
                                 "current gradle-wrapper.jar does not match the known-good checksum: {e:?}"
                             );
                             // verified known good to be copied to the project
-                            Some(known_good)
+                            (known_good, true)
                         }
                         Ok(_) => {
                             cu::debug!("verified existing gradle-wrapper.jar against known-good checksum");
                             // can use existing
-                            None
+                            (known_good, false)
                         }
                     }
                 }
@@ -86,7 +86,7 @@ pub fn run() -> cu::Result<ExitCode> {
         }
     };
 
-    environment.run_project_wrapper_jar(need_to_sync_known_good.as_ref())
+    environment.run_project_wrapper_jar(&known_good, need_to_sync_known_good)
 }
 
 fn join_known_good_handle(

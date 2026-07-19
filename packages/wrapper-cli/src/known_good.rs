@@ -1,6 +1,5 @@
 use std::path::{Path, PathBuf};
 use std::hash::{DefaultHasher, Hash, Hasher};
-use std::io::Read;
 use std::process::{self, Command, Stdio};
 use std::time::SystemTime;
 
@@ -111,25 +110,16 @@ pub fn generate(
             .stderr(Stdio::piped());
         // No --gradle-version: the option only exists from Gradle ~4.8, and it is redundant anyway.
         cu::debug!("launching gradle command: {cmd:?}");
-        let mut child = cu::check!(cmd.spawn(), "failed to run gradle wrapper")?;
-        let status = child.wait();
-        if let Some(mut out) = child.stdout.take() {
-            let mut s = String::new();
-            if out.read_to_string(&mut s).is_ok() {
-                for l in s.lines() {
-                    cu::debug!("[gradle:stdout] {l}");
-                }
-            }
+        let child = cu::check!(cmd.output(), "failed to run gradle wrapper")?;
+        let stdout = String::from_utf8_lossy(&child.stdout);
+        for l in stdout.lines() {
+            cu::debug!("[gradle:stdout] {l}");
         }
-        if let Some(mut out) = child.stderr.take() {
-            let mut s = String::new();
-            if out.read_to_string(&mut s).is_ok() {
-                for l in s.lines() {
-                    cu::debug!("[gradle:stderr] {l}");
-                }
-            }
+        let stderr = String::from_utf8_lossy(&child.stderr);
+        for l in stderr.lines() {
+            cu::debug!("[gradle:stderr] {l}");
         }
-        let status = cu::check!(status, "error waiting for gradle wrapper command")?;
+        let status = child.status;
         if !status.success() {
             cu::bail!("gradle wrapper command failed with {status}");
         }

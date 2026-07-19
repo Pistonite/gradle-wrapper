@@ -1,30 +1,18 @@
-[package]
-name = "gradle-wrapper"
-version = "0.1.0"
-edition = "2024"
+[workspace]
+members = [
+    # "packages/e2e-test",
+    "packages/wrapper-cli",
+]
+resolver = "2"
 
-# The binary must be named `gradlew`: it replaces the gradlew script in a project,
-# and its own file name is passed through as -Dorg.gradle.appname, which Gradle
-# prints back in help and error output.
-[[bin]]
-name = "gradlew"
-path = "src/main.rs"
+[workspace.dependencies.cu]
+package = "pistonite-cu"
+version = "0.9.1"
 
-[dependencies]
-anyhow = "1"
-log = "0.4"
-env_logger = { version = "0.11", default-features = false }
-sha2 = "0.10"
-zip = { version = "2", default-features = false, features = ["deflate"] }
-# ureq rather than reqwest: genuinely blocking, so no tokio/hyper for two GETs
-# and a file download. rustls rather than native-tls to avoid system OpenSSL.
-ureq = { version = "3", default-features = false, features = ["rustls"] }
-
-[target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.59", features = [
-    "Win32_Foundation",
-    "Win32_System_Console",
-] }
-
-[profile.release]
-strip = true
+[workspace.dependencies]
+sha2 = "0.11"
+# TODO --ai clean up llm output
+zip = { version = "2", default-features = false }
+# TODO --ai clean up llm output
+ureq = { version = "3", default-features = false }
+windows-sys = "0.59"

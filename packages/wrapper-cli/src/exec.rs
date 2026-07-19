@@ -63,3 +63,20 @@ mod imp {
         TRUE
     }
 }
+
+/// Assemble JVM options the way the scripts do: `DEFAULT_JVM_OPTS`, then
+/// `JAVA_OPTS`, then `GRADLE_OPTS`. Order matters - later options win in the JVM,
+/// so `GRADLE_OPTS` must be able to override the defaults.
+pub fn jvm_opts() -> Vec<String> {
+    let mut opts = vec!["-Xmx64m".to_string(), "-Xms64m".to_string()];
+    for var in ["JAVA_OPTS", "GRADLE_OPTS"] {
+        if let Ok(value) = std::env::var(var)
+            && !value.is_empty()
+        {
+            if let Ok(v) = shell_words::split(&value) {
+                opts.extend(v);
+            }
+        }
+    }
+    opts
+}

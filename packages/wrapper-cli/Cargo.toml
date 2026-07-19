@@ -1,0 +1,25 @@
+[package]
+name = "gradle-wrapper-cli"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+
+[[bin]]
+name = "gradlew"
+path = "src/main.rs"
+
+[dependencies]
+cu.workspace = true
+cu.features = ["cli", "fs", "derive"]
+sha2.workspace = true
+zip = { workspace = true, features = ["deflate"] }
+ureq = { workspace = true, features = ["rustls"] }
+shell-words = "1.1.1"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys.workspace = true
+windows-sys.features = [
+    "Win32_Foundation",
+    "Win32_System_Console",
+]

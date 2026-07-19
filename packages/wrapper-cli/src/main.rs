@@ -27,5 +27,5 @@ mod driver;
 mod environment;
 mod exec;
 mod gradle_dist;
-mod properties;
 mod known_good;
+mod properties;

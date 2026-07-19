@@ -1,0 +1,19 @@
+version: '3'
+
+includes:
+  common:
+    taskfile: ./mono-dev/task/common.yaml
+    optional: true
+    flatten: true
+
+  cli: { taskfile: packages/wrapper-cli,  dir: packages/wrapper-cli,  internal: true }
+  # e2e: { taskfile: packages/e2e-test,     dir: packages/e2e-test,     internal: true }
+
+tasks:
+  install:
+    - rm -rf mono-dev
+    - git clone https://github.com/Pistonight/mono-dev --depth 1
+
+  check:
+    - task: cli:check
+

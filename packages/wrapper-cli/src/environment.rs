@@ -6,7 +6,7 @@ use cu::pre::*;
 
 use crate::known_good::{self, KnownGood};
 use crate::properties::{self, ValidatedVersion};
-use crate::{exec, checksum};
+use crate::{checksum, exec};
 
 #[derive(Clone)]
 pub struct Environment {
@@ -220,7 +220,7 @@ impl Environment {
     pub fn run_project_wrapper_jar(
         &self,
         known_good: &KnownGood,
-        sync_jar: bool
+        sync_jar: bool,
     ) -> cu::Result<ExitCode> {
         let dir = self.project.join("gradle/wrapper");
         let jar = dir.join("gradle-wrapper.jar");
@@ -242,10 +242,11 @@ impl Environment {
             Ok(actual_hash) => checksum::verify(&expected_hash, &actual_hash).is_err(),
         };
         if sync_properties {
-            cu::debug!("replacing the project's gradle-wrapper.properties with the known-good copy");
+            cu::debug!(
+                "replacing the project's gradle-wrapper.properties with the known-good copy"
+            );
             cu::fs::copy(&known_good.properties, properties)?;
         }
-
 
         // Launch via -classpath and an explicit main class rather than `java -jar`.
         //
@@ -258,18 +259,15 @@ impl Environment {
         // `org.gradle.wrapper.GradleWrapperMain` is present in both, so this one
         // form works across the whole 2.0-to-9.x range.
         let mut cmd = std::process::Command::new(&self.java);
-            cmd.current_dir(&self.project)
+        cmd.current_dir(&self.project)
             .args(exec::jvm_opts())
             .arg("-Dorg.gradle.appname=gradlew")
             .arg("-classpath")
             .arg(&jar)
             .arg("org.gradle.wrapper.GradleWrapperMain")
-            .args(std::env::args_os().skip(1))
-            ;
+            .args(std::env::args_os().skip(1));
 
         cu::debug!("exec: {cmd:?}");
         Ok(exec::exec_replace(cmd))
     }
 }
-
-

@@ -59,7 +59,9 @@ pub fn run() -> cu::Result<ExitCode> {
                             (known_good, true)
                         }
                         Ok(_) => {
-                            cu::debug!("verified existing gradle-wrapper.jar against official checksum");
+                            cu::debug!(
+                                "verified existing gradle-wrapper.jar against official checksum"
+                            );
                             // can use existing
                             (known_good, false)
                         }
@@ -76,7 +78,9 @@ pub fn run() -> cu::Result<ExitCode> {
                             (known_good, true)
                         }
                         Ok(_) => {
-                            cu::debug!("verified existing gradle-wrapper.jar against known-good checksum");
+                            cu::debug!(
+                                "verified existing gradle-wrapper.jar against known-good checksum"
+                            );
                             // can use existing
                             (known_good, false)
                         }
@@ -107,13 +111,13 @@ fn join_known_good_handle(
     let (known_good, checksum_known_good) = match checksum_known_good {
         None => {
             let known_good = cu::check!(
-                environment.get_known_good(&version),
+                environment.get_known_good(version),
                 "failed to find known good after generating"
             )?;
             let checksum_known_good = checksum::sha256_file(&known_good.jar)?;
             (known_good, checksum_known_good)
         }
-        Some(checksum_known_good) => (environment.get_known_good(&version)?, checksum_known_good),
+        Some(checksum_known_good) => (environment.get_known_good(version)?, checksum_known_good),
     };
     // time-of-check time-of-use attack: re-validate it before using if we have an
     // official checksum, for max security

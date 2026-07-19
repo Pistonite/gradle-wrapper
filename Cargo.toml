@@ -1,0 +1,30 @@
+[package]
+name = "gradle-wrapper"
+version = "0.1.0"
+edition = "2024"
+
+# The binary must be named `gradlew`: it replaces the gradlew script in a project,
+# and its own file name is passed through as -Dorg.gradle.appname, which Gradle
+# prints back in help and error output.
+[[bin]]
+name = "gradlew"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+log = "0.4"
+env_logger = { version = "0.11", default-features = false }
+sha2 = "0.10"
+zip = { version = "2", default-features = false, features = ["deflate"] }
+# ureq rather than reqwest: genuinely blocking, so no tokio/hyper for two GETs
+# and a file download. rustls rather than native-tls to avoid system OpenSSL.
+ureq = { version = "3", default-features = false, features = ["rustls"] }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = [
+    "Win32_Foundation",
+    "Win32_System_Console",
+] }
+
+[profile.release]
+strip = true

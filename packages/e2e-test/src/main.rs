@@ -105,7 +105,7 @@ fn main(args: Args) -> cu::Result<()> {
     // forget it.
     let jabba_home = root.join(".jabba");
     unsafe { std::env::set_var("JABBA_HOME", &jabba_home) };
-    cu::info!("JABBA_HOME = {}", jabba_home.display());
+    cu::debug!("JABBA_HOME = {}", jabba_home.display());
 
     cu::info!("cleaning previous run output");
     cu::fs::rec_remove(root.join("target/e2e"))?;

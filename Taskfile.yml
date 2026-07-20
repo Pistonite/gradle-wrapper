@@ -19,6 +19,7 @@ tasks:
     - task: e2e:check
 
   test:
+    - cargo test
     - cargo run -p e2e-test -- --clean
     - cargo run -p e2e-test
 

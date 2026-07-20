@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 license = "MIT"
 publish = false
+repository = "https://github.com/Pistonite/gradle-wrapper"
 
 [[bin]]
 name = "gradlew"
@@ -23,3 +24,7 @@ windows-sys.features = [
     "Win32_Foundation",
     "Win32_System_Console",
 ]
+
+[package.metadata.binstall.signing]
+algorithm = "minisign"
+pubkey = "RWThJQKJaXayoZBe0YV5LV4KFkQwcqQ6Fg9dJBz18JnpHGdf/cHUyKs+"

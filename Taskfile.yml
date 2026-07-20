@@ -34,3 +34,7 @@ tasks:
     cmds:
       - git tag v{{.VERSION}}
       - git push origin v{{.VERSION}}
+
+  clean:
+    - cargo clean
+    - rm -rf .jabba .gradle-wrapper .gradle-test-home mono-dev

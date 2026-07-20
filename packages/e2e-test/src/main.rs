@@ -61,6 +61,7 @@ fn tests(root: &Path, gradlew_bin: &Path) -> Vec<TestObject> {
     add_behavior!(bad_version);
     add_behavior!(exit_code);
     add_behavior!(java_home_invalid);
+    add_behavior!(version_file_preferred);
 
     out
 }

@@ -93,6 +93,47 @@ pub fn java_home_invalid(root: &Path, gradlew: &Path) -> cu::Result<()> {
     Ok(())
 }
 
+pub fn version_file_preferred(root: &Path, gradlew: &Path) -> cu::Result<()> {
+    let java = helper::ensure_jdk(BEHAVIOUR_JDK)?;
+
+    // The properties file names a different version from .version.
+    // since 2.0 cannot run on JDK 25 it will just fail which tells us
+    // the wrong version is used
+    let proj = behaviour_project(root, "versionfile", "2.0", "bin")?;
+    // Trailing newline is intentional - the version must be trimmed.
+    cu::fs::write(
+        proj.join("gradle/wrapper/.version"),
+        format!("{BEHAVIOUR_VERSION}\n"),
+    )?;
+
+    let out = helper::invoke_gradlew(root, gradlew, &proj, &java, &["--version"])?;
+    cu::ensure!(out.stdout.contains(&format!("Gradle {BEHAVIOUR_VERSION}")))?;
+    cu::ensure!(!out.stdout.contains("Gradle 2.0"))?;
+    log!("ok - .version won over a different version in gradle-wrapper.properties");
+
+    // The properties file should have been replaced with the known-good one for
+    // the version .version asked for.
+    let props = cu::fs::read_string(proj.join("gradle/wrapper/gradle-wrapper.properties"))?;
+    if !props.contains(&format!("gradle-{BEHAVIOUR_VERSION}-bin.zip")) {
+        cu::bail!(
+            "properties were not replaced with the known-good {BEHAVIOUR_VERSION} file: {props}"
+        );
+    }
+    log!("ok - properties replaced with the known-good copy");
+
+    // Now make the properties file unparseable. With .version present the tool
+    // should never look at it, so this must still work.
+    cu::fs::write(
+        proj.join("gradle/wrapper/gradle-wrapper.properties"),
+        b"!!! not a properties file - no distributionUrl here at all !!!\n",
+    )?;
+    let out = helper::invoke_gradlew(root, gradlew, &proj, &java, &["--version"])?;
+    cu::ensure!(out.stdout.contains(&format!("Gradle {BEHAVIOUR_VERSION}")))?;
+    log!("ok - .version worked with an unparseable gradle-wrapper.properties");
+
+    Ok(())
+}
+
 /// A project set up for the behaviour tests, using the already-cached version.
 fn behaviour_project(
     root: &Path,

@@ -70,8 +70,7 @@ of the project being built, meaning you do not have to trust the gradle wrappers
 On the first run, it will download the matching version of gradle from Gradle and use that to generate
 `gradle-wrapper.jar`. This wrapper will then be cached which will speed up subsequent runs.
 (I am not sure why Gradle does not publish this JAR as part of the release which will make the whole process
-much simpler.) By default, the cache is stored at `~/.gradle-wrapper` and can be configured with the `GRADLE_WRAPPER_HOME`
-environment variable.
+much simpler.)
 
 **Important: another attack vector for project of any language that provides a package manager,
 is always the packages they depend on. Make sure you still audit the dependencies before building the project.**
@@ -91,38 +90,41 @@ Method 3: Build from source. A Rust toolchain is required
 cargo install gradle-wrapper-cli --git https://github.com/Pistonite/gradle-wrapper
 ```
 
-## Project Setup
-Now in your own project you can delete `gradlew`, `gradlew.bat`, and `gradle-wrapper.jar`, and add them
-to your `.gitignore`. Keep `gradle-wrapper.properties` as that is the standard location for tools to find
-the gradle version to use. Refer contributors to your project to this tool in your README so they
-can work more securely with Gradle projects.
+By default, the local cache for known-good JARs is stored at `~/.gradle-wrapper`.
+It can be configured with the `GRADLE_WRAPPER_HOME` environment variable.
 
+## Project Setup
+
+### Your own projects
+Now in your own project you can delete all gradle wrapper files and add them to your `.gitignore`
+
+```sh
+rm -f gradlew gradlew.bat gradle/wrapper/gradle-wrapper.properties gradle/wrapper/gradle-wrapper.jar
+git add .
+git commit -m "remove gradle wrappers"
+# then add them to your .gitignore
+```
+
+Then create a single file `/gradle/wrapper/.version` with the version of gradle you wish to use:
+```
+echo '9.6.1' > /gradle/wrapper/.version
+```
+If this file exists, this tool will prefer to use that version instead of parsing `gradle-wrapper.properties`.
+Since everyone use their-trusted `gradle-wrapper.properties`, this avoids generating diffs in that file.
+
+### Other people's projects
 When working on other people's projects, simply run `gradlew build` instead of `./gradlew build`.
 If the project has wrapper scripts that invoke `./gradlew`, replace the script with your `gradlew` tool
 ```
 cp $(which gradlew) .
 ```
 
-It's likely that this tool will generate a diff in `gradle/wrapper` in other people's project
-
-
-
- --------------------- TODO -------------------
-
-
-
-
-
-This installs a binary named `gradlew`. Put it on your `PATH` — unlike the official script, it does
-**not** need to live in the project directory, since it finds the project by walking up from your
-current directory.
-
-You can then delete `gradlew` and `gradlew.bat` from your projects, or leave them alone; this tool
-ignores them and never overwrites them.
+It's likely that this tool will generate diffs in `gradle/wrapper` in other people's project.
+If this happens to you a lot, consider using a global git-ignore file.
 
 ## Usage
 
-Identical to the script it replaces. Every argument is passed through to Gradle untouched:
+Identical to the `gradlew` script it replaces. Every argument is passed through to Gradle untouched:
 
 ```sh
 gradlew build
@@ -130,69 +132,9 @@ gradlew test --info
 gradlew :app:assembleDebug
 ```
 
-## Configuration
-
-All configuration is by environment variable, since every command-line argument belongs to Gradle.
-
-| Variable | Purpose |
-|---|---|
-| `GRADLE_WRAPPER_HOME` | Where known-good jars are cached. Defaults to `~/.gradle-wrapper`. |
-| `JAVA_HOME` | The JDK to use. Same semantics as the official script, including the fallback to `java` on `PATH`. |
-| `JAVA_OPTS`, `GRADLE_OPTS` | Extra JVM options, appended in that order after the defaults, so `GRADLE_OPTS` wins. |
-| `GRADLE_VERSION` | Escape hatch: the version to use when it cannot be read from `gradle-wrapper.properties`. |
-| `RUST_LOG` | Set to `debug` to see what the tool is doing. Off by default. |
-
-The cache is laid out as:
-
-```
-$GRADLE_WRAPPER_HOME/
-  known-good/
-    gradle-wrapper-<version>.jar         # verified, trusted
-    gradle-wrapper-<version>.properties
-  work/<id>/                             # transient; removed on success
-```
-
-On failure the work directory is deliberately left behind, and its path printed, so you can inspect
-what happened.
-
-## What this does *not* protect you against
-
-**Running a build still executes the project's build scripts.** `build.gradle`, `settings.gradle`,
-any applied plugins, and everything they pull in are arbitrary code, evaluated with your privileges.
-This tool removes one specific attack — the opaque committed binary that runs *before* any of that is
-even read — but running `gradlew build` in a repository you do not trust is still running untrusted
-code.
-
-It also trusts `services.gradle.org` and the TLS chain to it. If Gradle's published checksums were
-themselves compromised, verifying against them proves nothing.
-
-Treat this as closing a door nobody was watching, not as making untrusted projects safe to build.
-
 ## Compatibility
 
-Tested end-to-end against **Gradle 2.0 through 9.6.1** — every major version — on JDK 8, 21 and 25.
+Tested end-to-end against Gradle 2.0 through 9.6.1
 
-That range spans a real incompatibility worth knowing about: wrapper jars before Gradle 9 carry no
-`Main-Class` manifest entry, so they cannot be launched with `java -jar` the way the modern script
-does. This tool launches via `-classpath` with an explicit main class, which works across the whole
-range.
+Latest JDK tested is JDK 25. Tested on Windows and Linux and MacOS.
 
-Linux and macOS are supported. Windows code paths exist but are currently unverified.
-
-## Development
-
-```sh
-cargo test                            # fast, offline unit tests
-cargo run -p e2e-test                 # full end-to-end matrix (slow, downloads a lot)
-cargo run -p e2e-test -- 2.0 9.6.1    # only these versions
-```
-
-The end-to-end suite provisions its own JDKs project-locally via
-[jabba](https://github.com/Jabba-Team/jabba), caching everything under `.jabba/`, `.gradle-wrapper/`
-and `.gradle-test-home/`. The first run downloads several gigabytes; later runs take seconds.
-
-See `TEST_PLAN.md` for what the suite covers, and `LOG.md` for the implementation history.
-
-## License
-
-MIT — see [LICENSE](LICENSE).

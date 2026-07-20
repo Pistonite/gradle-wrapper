@@ -151,6 +151,16 @@ impl Environment {
     ///
     /// falls back to GRADLE_VERSION environment variable
     pub fn read_version_from_wrapper_properties(&self) -> cu::Result<ValidatedVersion> {
+        // prefer gradle/wrapper/.version - not a standard but used by this tool
+        // to skip checking gradle-wrapper.properties entirely
+        let version_path = self.project.join("gradle/wrapper/.version");
+        if let Ok(v) = cu::fs::read_string(&version_path) {
+            let v = cu::check!(
+                ValidatedVersion::try_new(v.trim().to_string()),
+                "failed to read version from gradle/wrapper/.version"
+            )?;
+            return Ok(v);
+        }
         let props_path = self
             .project
             .join("gradle/wrapper/gradle-wrapper.properties");

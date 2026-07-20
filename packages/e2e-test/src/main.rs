@@ -15,7 +15,7 @@ type TestObject = (String, Box<dyn FnOnce() -> cu::Result<()>>);
 fn tests(root: &Path, gradlew_bin: &Path) -> Vec<TestObject> {
     let mut out = Vec::<TestObject>::new();
     macro_rules! add_fixture {
-        ($gradle_version:literal, $jdk_version:literal) => {{
+        ($gradle_version:literal, $jdk_version:expr) => {{
             let gradle_version = $gradle_version.to_string();
             let jdk_version = $jdk_version.to_string();
             let root = root.to_path_buf();
@@ -43,16 +43,23 @@ fn tests(root: &Path, gradlew_bin: &Path) -> Vec<TestObject> {
             ))
         }};
     }
+
+    let jdk_8 = if cfg!(target_os = "macos") {
+        // openjdk 8 doesn't exist for mac
+        "temurin@8"
+    } else {
+        "openjdk@8"
+    };
     // (Gradle version, JDK). Java 8 covers Gradle 2.0–8.14.x, so one JDK carries
     // almost the whole range; see https://docs.gradle.org/current/userguide/compatibility.html
-    add_fixture!("2.0", "openjdk@8"); // oldest version to support jdk 8
-    add_fixture!("2.14.1", "openjdk@8"); // last 2.x
-    add_fixture!("3.5.1", "openjdk@8"); // last 3.x - no published wrapper checksum
-    add_fixture!("4.10.3", "openjdk@8"); // last 4.x
-    add_fixture!("5.6.4", "openjdk@8"); // last 5.x
-    add_fixture!("6.9.4", "openjdk@8"); // last 6.x
-    add_fixture!("7.6.4", "openjdk@8"); // last 7.x
-    add_fixture!("8.14.3", "openjdk@8"); // last 8.x - Java 8's upper bound
+    add_fixture!("2.0", jdk_8); // oldest version to support jdk 8
+    add_fixture!("2.14.1", jdk_8); // last 2.x
+    add_fixture!("3.5.1", jdk_8); // last 3.x - no published wrapper checksum
+    add_fixture!("4.10.3", jdk_8); // last 4.x
+    add_fixture!("5.6.4", jdk_8); // last 5.x
+    add_fixture!("6.9.4", jdk_8); // last 6.x
+    add_fixture!("7.6.4", jdk_8); // last 7.x
+    add_fixture!("8.14.3", jdk_8); // last 8.x - Java 8's upper bound
     add_fixture!("9.0.0", "openjdk@21"); // first 9.x, gradle-gradle-cli-main layout
     add_fixture!("9.6.1", "openjdk@25"); // current release on the latest LTS
 
@@ -77,7 +84,19 @@ struct Args {
     common: cu::cli::Flags,
 }
 
-#[cu::cli]
+struct LogConfig;
+impl cu::cli::LogConfig for LogConfig {
+    fn process(&self, record: &cu::lv::LogRecord) -> (cu::lv::Lv, bool) {
+        if let Some(x) = record.module_path() {
+            if x.starts_with("ureq") || x.starts_with("rustls") {
+                return (cu::lv::T, true);
+            }
+        }
+        cu::cli::DefaultLogConfig.process(record)
+    }
+}
+
+#[cu::cli(log_config = |_| LogConfig)]
 fn main(args: Args) -> cu::Result<()> {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent_abs_times(2)?;
 
@@ -90,6 +109,7 @@ fn main(args: Args) -> cu::Result<()> {
 
     cu::info!("cleaning previous run output");
     cu::fs::rec_remove(root.join("target/e2e"))?;
+    cu::fs::rec_remove(root.join(".gradle-wrapper/work"))?;
     if args.clean {
         cu::hint!("cleaning previous run cache");
         cu::fs::rec_remove(&jabba_home)?;
@@ -172,7 +192,6 @@ fn main(args: Args) -> cu::Result<()> {
                 }
             }
             cu::progress!(bar += 1);
-            log!("===== << {test_name} >> =====");
         }
 
         bar.done();

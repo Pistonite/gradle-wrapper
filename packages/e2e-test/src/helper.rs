@@ -109,6 +109,7 @@ pub fn ensure_jdk(version: &str) -> cu::Result<PathBuf> {
     let (child, bar, _) = cu::which("jabba")?
         .command()
         .args(["install", version])
+        .env("RUST_LOG", "info")
         .stdoe(
             cu::pio::spinner(format!("installing {version}")).configure_spinner(|x| x.keep(false)),
         )
@@ -125,6 +126,7 @@ fn jabba_which(version: &str) -> cu::Result<PathBuf> {
     let (child, stdout) = cu::which("jabba")?
         .command()
         .args(["which", version, "--home"])
+        .env("RUST_LOG", "info")
         .stdout(cu::pio::string())
         .stderr(cu::lv::D)
         .stdin_null()

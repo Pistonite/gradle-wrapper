@@ -46,7 +46,7 @@ fn tests(root: &Path, gradlew_bin: &Path) -> Vec<TestObject> {
 
     let jdk_8 = if cfg!(target_os = "macos") {
         // openjdk 8 doesn't exist for mac
-        "temurin@8"
+        "amazon-corretto@8"
     } else {
         "openjdk@8"
     };

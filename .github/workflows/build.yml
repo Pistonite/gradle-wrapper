@@ -26,6 +26,14 @@ jobs:
           rust: stable
           rust-native: ${{ matrix.target }}
           tool-cargo-binstall: jabba(jabba-shim)=Pistonite/jabba-shim
+      - uses: Pistonight/mono-dev/actions/permanent-cache@main
+        with:
+          path: | 
+            .jabba
+            .gradle-test-home
+          key: gradle-wrapper-test
+          version: v1
+          task: --list
       - run: task check
       - run: task test
       - uses: Pistonight/mono-dev/actions/rust-xplat@main

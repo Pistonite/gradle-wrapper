@@ -41,7 +41,10 @@ impl Environment {
 /// However in our program, the script is installed on the system, so we need to walk the
 /// current directory to find the root
 fn find_project_dir() -> cu::Result<PathBuf> {
-    let marker = Path::new("gradle/wrapper/gradle-wrapper.properties");
+    let markers = [
+        "gradle/wrapper/.version",
+        "gradle/wrapper/gradle-wrapper.properties",
+    ];
 
     let cwd = cu::check!(
         std::env::current_dir(),
@@ -49,9 +52,11 @@ fn find_project_dir() -> cu::Result<PathBuf> {
     )?;
     let mut dir = cwd.as_path();
     loop {
-        if dir.join(marker).is_file() {
-            cu::debug!("project dir: {}", dir.display());
-            return Ok(dir.to_path_buf());
+        for marker in markers {
+            if dir.join(marker).is_file() {
+                cu::debug!("project dir: {}", dir.display());
+                return Ok(dir.to_path_buf());
+            }
         }
         match dir.parent() {
             Some(parent) => dir = parent,

@@ -112,9 +112,7 @@ fn main(args: Args) -> cu::Result<()> {
     cu::fs::rec_remove(root.join(".gradle-wrapper/work"))?;
     if args.clean {
         cu::hint!("cleaning previous run cache");
-        cu::fs::rec_remove(&jabba_home)?;
         cu::fs::rec_remove(root.join(".gradle-wrapper"))?;
-        cu::fs::rec_remove(root.join(".gradle-test-home"))?;
     }
 
     // build the program

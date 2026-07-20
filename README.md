@@ -19,7 +19,7 @@ Every Gradle project contains these files:
 
 Note the `.jar` - it is a binary blob. This means that if someone commits a different version of it,
 the change cannot be reviewed as a diff, which makes it the perfect place to plant malicious code.
-The most famous recent attack of this type is [the xz backdoor incident](https://daily.dev/blog/xz-backdoor-the-full-story-in-one-place/),
+The most famous recent attack of this type is [the xz backdoor incident](https://www.youtube.com/watch?v=aoag03mSuXQ),
 where a malicious contributor hid a backdoor inside the XZ compression library as a binary test file.
 
 In the Gradle world, the expected workflow for a contributor is to run `./gradlew`, which invokes one

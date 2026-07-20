@@ -26,3 +26,11 @@ tasks:
   e2e:
     - cargo run -p e2e-test -- {{.CLI_ARGS}}
 
+
+  publish:
+    vars:
+      VERSION:
+        sh: grep -E '^version =' packages/wrapper-cli/Cargo.toml | head -n1 | sed -E 's/version = "([^"]+)"/\1/'
+    cmds:
+      - git tag v{{.VERSION}}
+      - git push origin v{{.VERSION}}

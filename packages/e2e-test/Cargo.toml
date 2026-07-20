@@ -1,0 +1,11 @@
+[package]
+name = "e2e-test"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+cu.workspace = true
+cu.features = ["cli", "fs", "process", "derive", "json"]
+sha2.workspace = true
+ureq = { workspace = true, features = ["rustls"] }

@@ -7,7 +7,7 @@ includes:
     flatten: true
 
   cli: { taskfile: packages/wrapper-cli,  dir: packages/wrapper-cli,  internal: true }
-  # e2e: { taskfile: packages/e2e-test,     dir: packages/e2e-test,     internal: true }
+  e2e: { taskfile: packages/e2e-test,     dir: packages/e2e-test,     internal: true }
 
 tasks:
   install:
@@ -16,4 +16,12 @@ tasks:
 
   check:
     - task: cli:check
+    - task: e2e:check
+
+  test:
+    - cargo run -p e2e-test -- --clean
+    - cargo run -p e2e-test
+
+  e2e:
+    - cargo run -p e2e-test -- {{.CLI_ARGS}}
 

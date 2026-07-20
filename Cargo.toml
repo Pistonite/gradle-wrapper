@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    # "packages/e2e-test",
+    "packages/e2e-test",
     "packages/wrapper-cli",
 ]
 resolver = "2"

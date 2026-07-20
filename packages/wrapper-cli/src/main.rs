@@ -15,8 +15,11 @@ fn main() -> ExitCode {
     match driver::run() {
         Ok(code) => code,
         Err(e) => {
-            cu::error!("{e:?}");
-            cu::hint!("if you trust the project, consider using './gradlew' directly.");
+            cu::error!("{e:?}\n");
+            cu::hint!(
+                "if the error above is related to generating or verifying gradle-wrapper.jar\n\
+                consider using './gradlew' directly ONLY IF YOU TRUST THE PROJECT."
+            );
             ExitCode::FAILURE
         }
     }

@@ -20,7 +20,7 @@ pub fn run() -> cu::Result<ExitCode> {
     // local source - known good
     let checksum_known_good = environment.read_cached_known_good_wrapper_sha256(&version);
     let known_good_handle = if let Err(e) = checksum_known_good.as_ref() {
-        cu::warn!("wrapper version {version} does not have a local known-good: {e:?}");
+        cu::debug!("wrapper version {version} does not have a local known-good: {e:?}");
         let handle = environment.clone().generate_known_good_thread(&version);
         Some(handle)
     } else {

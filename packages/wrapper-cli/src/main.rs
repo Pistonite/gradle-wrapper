@@ -9,9 +9,15 @@
 //! jar (verified and cached system-wide) if not, and launches it.
 
 use std::process::ExitCode;
+use std::sync::Arc;
 
 fn main() -> ExitCode {
-    cu::cli::level("");
+    cu::cli::init_options(
+        cu::lv::Color::Auto,
+        cu::lv::Print::Normal,
+        None,
+        Arc::new(LogConfig),
+    );
     match driver::run() {
         Ok(code) => code,
         Err(e) => {
@@ -22,6 +28,18 @@ fn main() -> ExitCode {
             );
             ExitCode::FAILURE
         }
+    }
+}
+
+struct LogConfig;
+impl cu::cli::LogConfig for LogConfig {
+    fn process(&self, record: &cu::lv::LogRecord) -> (cu::lv::Lv, bool) {
+        if let Some(x) = record.module_path() {
+            if x.starts_with("ureq") || x.starts_with("rustls") {
+                return (cu::lv::T, true);
+            }
+        }
+        cu::cli::DefaultLogConfig.process(record)
     }
 }
 

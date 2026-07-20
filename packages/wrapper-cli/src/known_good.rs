@@ -1,7 +1,8 @@
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::path::{Path, PathBuf};
 use std::process::{self, Command, Stdio};
-use std::time::SystemTime;
+use std::thread;
+use std::time::{Duration, SystemTime};
 
 use cu::pre::*;
 
@@ -71,7 +72,42 @@ pub fn generate(
             .hash(&mut h);
         format!("{:016x}", h.finish())
     };
-    let work_dir = cu::path!(&(&wrapper_home) / "work" / work_id);
+    // clean up previous _done dirs
+    let work_root = wrapper_home.join("work");
+    if let Ok(work_root_reader) = cu::fs::read_dir(&work_root) {
+        let mut done_ids = vec![];
+        for e in work_root_reader {
+            let Ok(e) = e else {
+                continue;
+            };
+            let Ok(metadata) = e.metadata() else {
+                continue;
+            };
+            if !metadata.is_file() {
+                continue;
+            }
+            let file_name = e.file_name();
+            if let Some(x) = file_name.to_string_lossy().strip_suffix("_done") {
+                done_ids.push(x.to_string());
+            }
+        }
+        if !done_ids.is_empty() {
+            cu::debug!("cleaning up previous work dirs: {done_ids:?}");
+            for id in done_ids {
+                let dir = work_root.join(&id);
+                let result = if dir.is_dir() {
+                    cu::fs::rec_remove(&dir)
+                } else {
+                    cu::fs::remove(&dir)
+                };
+                if result.is_ok() {
+                    let _ = cu::fs::remove(work_root.join(format!("{id}_done")));
+                }
+            }
+        }
+    }
+
+    let work_dir = work_root.join(&work_id);
     cu::fs::make_dir_empty(&work_dir)?;
 
     cu::progress!(bar, "downloading gradle");
@@ -161,7 +197,28 @@ pub fn generate(
 
     let known_good = KnownGood::promote(wrapper_home, version, jar, properties)?;
 
-    let _ = cu::fs::rec_remove(&work_dir);
+    if let Err(e) = cu::fs::rec_remove(&work_dir) {
+        cu::debug!("failed to remove work dir: {e:?}");
+        // this could be due to dangling gradle/JVM process,
+        // create a marker file _done that tells the next invocation to delete it
+        let marker_file = work_root.join(format!("{work_id}_done"));
+        if let Err(e) = cu::fs::write(&marker_file, "marker") {
+            cu::debug!("failed to write done marker for work dir: {e:?}");
+            // if that fails then we wait a little bit
+            for i in 0..3 {
+                thread::sleep(Duration::from_millis(1500 * i + 1));
+                match cu::fs::rec_remove(&work_dir) {
+                    Ok(_) => break,
+                    Err(e) => {
+                        cu::debug!("retry #{} - failed to remove work dir: {:?}", i + 1, e);
+                        if cu::fs::write(&marker_file, "marker").is_ok() {
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
     cu::debug!("saved known good wrapper to cache: {known_good:?}");
     Ok(())
 }

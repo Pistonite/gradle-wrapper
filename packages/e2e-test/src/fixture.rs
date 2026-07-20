@@ -70,21 +70,6 @@ pub fn run_test(root: &Path, gradlew: &Path, version: &str, jdk: &str) -> cu::Re
     }
     log!("ok - known-good created");
 
-    // Work directory cleaned up.
-    let work = root.join(".gradle-wrapper/work");
-    match cu::fs::read_dir(&work) {
-        Err(_) => {
-            log!("ok - work dir doesn't exist")
-        }
-        Ok(mut leftovers) => {
-            if leftovers.next().is_none() {
-                log!("ok - work dir is empty");
-            } else {
-                cu::bail!("entries left behind in '{}'", work.display());
-            }
-        }
-    }
-
     // Our own gradlew script must be untouched — the `wrapper` task emits one,
     // and copying it would overwrite the binary with a shell script.
     if cu::fs::read(&script)? != b"#!/bin/sh\n# sentinel\n" {
